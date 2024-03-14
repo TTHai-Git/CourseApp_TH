@@ -86,7 +86,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'coursedb',
         'USER': 'root',
-        'PASSWORD': 'Admin@123',
+        'PASSWORD': '123456a@A',
         'HOST': ''  # mặc định localhost
     }
 }
@@ -129,3 +129,13 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+import cloudinary
+
+import cloudinary
+
+cloudinary.config(
+    cloud_name="dh5jcbzly",
+    api_key="956284944785852",
+    api_secret="ZYqL_9IS8N4a6uZ1esDJUBHNeq4"
+)

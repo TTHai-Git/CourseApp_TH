@@ -1,11 +1,14 @@
-from ckeditor.fields import RichTextField
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from ckeditor.fields import RichTextField
+from cloudinary.models import CloudinaryField
 
 
-# Create your models here.
+# from cloudinary.models import CloudinaryField
+
+
 class User(AbstractUser):
-    pass
+    avatar = CloudinaryField(null=True)
 
 
 class BaseModel(models.Model):
@@ -18,22 +21,10 @@ class BaseModel(models.Model):
 
 
 class Category(BaseModel):
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=50)
 
     def __str__(self):
         return self.name
-
-
-class Course(BaseModel):
-    subject = models.CharField(max_length=100, unique=True)
-    description = RichTextField()
-    category = models.ForeignKey(Category,
-                                 on_delete=models.CASCADE)
-    image = models.ImageField(upload_to='courses/%Y/%m/', null=True, blank=True)
-    active = models.BooleanField(default=True)
-
-    def __str__(self):
-        return self.subject
 
 
 class Tag(BaseModel):
@@ -50,10 +41,22 @@ class ItemBase(BaseModel):
         abstract = True
 
 
+class Course(ItemBase):
+    subject = models.CharField(max_length=255)
+    description = RichTextField()
+    #image = models.ImageField(upload_to='courses/%Y/%m/', null=True, blank=True)
+    image = CloudinaryField(null=True)
+    category = models.ForeignKey(Category, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.subject
+
+
 class Lesson(ItemBase):
-    subject = models.CharField(max_length=100)
+    subject = models.CharField(max_length=255)
     content = RichTextField()
-    image = models.ImageField(upload_to='lesson/%Y/%m/')
+    #image = models.ImageField(upload_to='lesson/%Y/%m/')
+    image = CloudinaryField(null=True)
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
 
     def __str__(self):
@@ -64,14 +67,14 @@ class Interaction(BaseModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE)
 
+    class Meta:
+        abstract = True
+
 
 class Comment(Interaction):
     content = models.CharField(max_length=255)
 
 
-
 class Like(Interaction):
-
     class Meta:
-
-        unique_together = ('user','lesson')
+        unique_together = ('user', 'lesson')

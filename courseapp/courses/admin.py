@@ -18,20 +18,23 @@ class CourseForm(forms.ModelForm):
 class MyCourseAdmin(admin.ModelAdmin):
     list_filter = ['id', 'subject']
     search_fields = ['id', 'subject']
-    readonly_fields = ['avatar']
-
-    def avatar(self, obj):
-        if obj:
-            return mark_safe(
-                '<img src="/static/{url}" width="120" />' \
-                    .format(url=obj.image.name)
-            )
-    # class Media:
-    #     css = {
-    #         'all':('/static/css/style.css', )
-    #     }
+    # readonly_fields = ['avatar']
+    #
+    # def avatar(self, obj):
+    #     if obj:
+    #         return mark_safe(
+    #             '<img src="/static/{url}" width="120" />' \
+    #                 .format(url=obj.image.value)
+    #         )
+    # # class Media:
+    # #     css = {
+    # #         'all':('/static/css/style.css', )
+    # #     }
     form = CourseForm
 
 
 admin.site.register(Category)
 admin.site.register(Course, MyCourseAdmin)
+admin.site.register(Lesson)
+admin.site.register(User)
+admin.site.register(Tag)
