@@ -41,9 +41,16 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'courses',
     'ckeditor',
-    'ckeditor_uploader'
+    'ckeditor_uploader',
+    'rest_framework',
 
 ]
+
+REST_FRAMEWORK = {
+    'DEFAULT_PAGINATION_CLASS':
+        'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 2
+}
 
 AUTH_USER_MODEL = 'courses.User'
 CKEDITOR_UPLOAD_PATH = "static/ckeditor/images/"

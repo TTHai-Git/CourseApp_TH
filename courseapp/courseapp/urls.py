@@ -16,11 +16,17 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include, re_path
+from rest_framework import routers
 
 from courses import views
 
+router = routers.DefaultRouter()
+router.register('courses', views.CourseViewSet)
+router.register('categories',views.CategoryViewSet)
+
 urlpatterns = [
-    path('', views.index, name="index"),
+    # path('', views.index, name="index"),
+    path('', include(router.urls)),
     path('admin/', admin.site.urls),
     re_path(r'^ckeditor/', include('ckeditor_uploader.urls')),
 ]
