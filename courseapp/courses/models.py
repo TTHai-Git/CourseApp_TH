@@ -43,7 +43,7 @@ class ItemBase(BaseModel):
 
 class Course(ItemBase):
     subject = models.CharField(max_length=255)
-    description = RichTextField()
+    description = RichTextField(null=True)
     #image = models.ImageField(upload_to='courses/%Y/%m/', null=True, blank=True)
     image = CloudinaryField(null=True)
     category = models.ForeignKey(Category, on_delete=models.CASCADE)
