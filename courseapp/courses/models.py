@@ -67,6 +67,9 @@ class Interaction(BaseModel):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE)
 
+    def __str__(self):
+        return f'{self.user_id} - {self.lesson_id}'
+
     class Meta:
         abstract = True
 

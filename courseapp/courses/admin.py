@@ -1,3 +1,4 @@
+import cloudinary
 from django.contrib import admin
 from django import forms
 from courses.models import *
@@ -16,21 +17,18 @@ class CourseForm(forms.ModelForm):
 
 
 class MyCourseAdmin(admin.ModelAdmin):
-    list_filter = ['id', 'subject']
-    search_fields = ['id', 'subject']
-    # readonly_fields = ['avatar']
-    #
-    # def avatar(self, obj):
-    #     if obj:
-    #         return mark_safe(
-    #             '<img src="/static/{url}" width="120" />' \
-    #                 .format(url=obj.image.value)
-    #         )
-    # # class Media:
-    # #     css = {
-    # #         'all':('/static/css/style.css', )
-    # #     }
+    list_display = ['id', 'subject', 'created_date', 'updated_date', 'active']
+    search_fields = ['subject', 'description']
+    list_filter = ['id', 'created_date', 'subject']
+    readonly_fields = ['my_image']
     form = CourseForm
+
+    def my_image(self, instance):
+        if instance:
+            if instance.image is cloudinary.CloudinaryResource:
+                return mark_safe(f"<img width='120' src='{instance.image.url}' />")
+
+            return mark_safe(f"<img width='120' src='/static/{instance.image.name}' />")
 
 
 admin.site.register(Category)

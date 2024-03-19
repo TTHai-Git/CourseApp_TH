@@ -1,17 +1,14 @@
-from django.http import HttpResponse, Http404
+from django.http import HttpResponse
 from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
 from rest_framework import viewsets, permissions, generics, status, parsers
 from rest_framework.authentication import BasicAuthentication, TokenAuthentication
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
-from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.views import APIView
-
 import courses.pagination
 from courses.models import Course, Category, Lesson, User
-from courses.serializers import CourseSerializer, CategorySerializer, LessonSerializer, UserSerializer
+from courses import serializers
 
 
 # Create your views here.
@@ -22,19 +19,19 @@ def index(request):
 
 class CourseViewSet(viewsets.ViewSet, viewsets.generics.ListAPIView):
     queryset = Course.objects.filter(active=True)
-    serializer_class = CourseSerializer
-    permissions_classes = [permissions.IsAuthenticated]
+    serializer_class = serializers.CourseSerializer
+    # permissions_classes = [permissions.IsAuthenticated]
     pagination_class = courses.pagination.CoursesPagination
 
     def get_queryset(self):
         queryset = self.queryset
 
-        q = self.request.query_params.get('q')
         if self.action.__eq__('list'):
+            q = self.request.query_params.get('q')
             if q:
                 queryset = self.request.query_params.filter(name__icontains=q)
 
-            category_id = self.request.query_params.get('cate_id')
+            category_id = self.request.query_params.get('category_id')
 
             if category_id:
                 queryset = queryset.filter(category_id=category_id)
@@ -65,6 +62,7 @@ class CourseViewSet(viewsets.ViewSet, viewsets.generics.ListAPIView):
     #     if self.action in ['list', 'retrieve']:
     #         return [IsAuthenticated()]
     #     return [IsAdminUser()]
+
     @action(methods=['get'], url_path='lessons', detail=True)
     def get_lessons(self, request, pk):
         lessons = self.get_object().lesson_set.filter(active=True)
@@ -72,12 +70,12 @@ class CourseViewSet(viewsets.ViewSet, viewsets.generics.ListAPIView):
         if q:
             lessons = lessons.filter(subject__icontains=q)
 
-        return Response(LessonSerializer(lessons, many=True).data, status=status.HTTP_200_OK)
+        return Response(serializers.LessonSerializer(lessons, many=True).data, status=status.HTTP_200_OK)
 
 
-class CategoryViewSet(viewsets.ViewSet, viewsets.ModelViewSet):
+class CategoryViewSet(viewsets.ViewSet, generics.ListAPIView):
     queryset = Category.objects.filter(active=True)
-    serializer_class = CategorySerializer
+    serializer_class = serializers.CategorySerializer
     permissions_classes = [permissions.IsAuthenticated]
 
     # def list(self, request):
@@ -107,7 +105,7 @@ class CategoryViewSet(viewsets.ViewSet, viewsets.ModelViewSet):
         except Category.DoesNotExist:
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
-        serializer = CategorySerializer(category)
+        serializer = serializers.CategorySerializer(category)
         return Response(serializer.data, status.HTTP_200_OK)
 
     def get_permissions(self):
@@ -118,8 +116,8 @@ class CategoryViewSet(viewsets.ViewSet, viewsets.ModelViewSet):
 
 class LessonViewSet(viewsets.ViewSet, generics.RetrieveAPIView):
     queryset = Lesson.objects.prefetch_related('tags').filter(active=True)
-    serializer_class = LessonSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = serializers.LessonSerializer
+    # permission_classes = [permissions.IsAuthenticated]
 
     def get_permissions(self):
         if self.action in ['list', 'retrieve']:
@@ -131,18 +129,10 @@ class UserViewSet(viewsets.ViewSet, generics.CreateAPIView):
     queryset = User.objects.filter(is_active=True)
     authentication_classes = [BasicAuthentication, TokenAuthentication]
     permission_classes = [IsAdminUser]
-    serializer_class = UserSerializer
-    parser_class = parsers.MultiPartParser
+    serializer_class = serializers.UserSerializer
+    parser_classes = [parsers.MultiPartParser, ]
 
 
-schema_view = get_schema_view(
-    openapi.Info(
-        title="Course API",
-        default_version='v1',
-        description="APIs for CourseApp",
-        contact=openapi.Contact(email="2151050112hai@ou.edu.vn"),
-        license=openapi.License(name="Trịnh Thanh Hải@2024"),
-    ),
-    public=True,
-    permission_classes=(permissions.AllowAny,),
-)
+
+
+
