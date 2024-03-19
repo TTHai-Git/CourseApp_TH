@@ -1,15 +1,17 @@
 from django.http import HttpResponse, Http404
 from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
-from rest_framework import viewsets, permissions, generics, status
+from rest_framework import viewsets, permissions, generics, status, parsers
 from rest_framework.authentication import BasicAuthentication, TokenAuthentication
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from courses.models import Course, Category, Lesson
-from courses.serializers import CourseSerializer, CategorySerializer, LessonSerializer
+import courses.pagination
+from courses.models import Course, Category, Lesson, User
+from courses.serializers import CourseSerializer, CategorySerializer, LessonSerializer, UserSerializer
 
 
 # Create your views here.
@@ -18,35 +20,59 @@ def index(request):
     return HttpResponse("CourseApp")
 
 
-class CourseViewSet(viewsets.ViewSet):
-    # queryset = Course.objects.filter(active=True)
-    # serializer_class = CourseSerializer
-    # permissions_classes = [permissions.IsAuthenticated]
+class CourseViewSet(viewsets.ViewSet, viewsets.generics.ListAPIView):
+    queryset = Course.objects.filter(active=True)
+    serializer_class = CourseSerializer
+    permissions_classes = [permissions.IsAuthenticated]
+    pagination_class = courses.pagination.CoursesPagination
 
-    def list(self, request):
-        courses = Course.objects.filter(active=True)
-        serializer = CourseSerializer(courses, many=True)
-        return Response(serializer.data)
+    def get_queryset(self):
+        queryset = self.queryset
 
-    def retrieve(self, request, pk):
-        try:
-            course = Course.objects.get(pk=pk)
-        except course.DoesNotExist:
-            return Http404()
-        return Response(CourseSerializer(course).data)
+        q = self.request.query_params.get('q')
+        if self.action.__eq__('list'):
+            if q:
+                queryset = self.request.query_params.filter(name__icontains=q)
 
-    def create(self, request):
-        d = request.data
-        c = Course.objects.create(subject=d['subject'],
-                                  category=d['category'],
-                                  tags=d['tags'])
-        serializer = CourseSerializer(c)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+            category_id = self.request.query_params.get('cate_id')
 
-    def get_permissions(self):
-        if self.action in ['list', 'retrieve']:
-            return [IsAuthenticated()]
-        return [IsAdminUser()]
+            if category_id:
+                queryset = queryset.filter(category_id=category_id)
+
+        return queryset
+
+    # def list(self, request):
+    #     courses = Course.objects.filter(active=True)
+    #     serializer = CourseSerializer(courses, many=True)
+    #     return Response(serializer.data)
+    #
+    # def retrieve(self, request, pk):
+    #     try:
+    #         course = Course.objects.get(pk=pk)
+    #     except course.DoesNotExist:
+    #         return Http404()
+    #     return Response(CourseSerializer(course).data)
+    #
+    # def create(self, request):
+    #     d = request.data
+    #     c = Course.objects.create(subject=d['subject'],
+    #                               category=d['category'],
+    #                               tags=d['tags'])
+    #     serializer = CourseSerializer(c)
+    #     return Response(serializer.data, status=status.HTTP_201_CREATED)
+    #
+    # def get_permissions(self):
+    #     if self.action in ['list', 'retrieve']:
+    #         return [IsAuthenticated()]
+    #     return [IsAdminUser()]
+    @action(methods=['get'], url_path='lessons', detail=True)
+    def get_lessons(self, request, pk):
+        lessons = self.get_object().lesson_set.filter(active=True)
+        q = self.request.query_params.get('q')
+        if q:
+            lessons = lessons.filter(subject__icontains=q)
+
+        return Response(LessonSerializer(lessons, many=True).data, status=status.HTTP_200_OK)
 
 
 class CategoryViewSet(viewsets.ViewSet, viewsets.ModelViewSet):
@@ -90,8 +116,8 @@ class CategoryViewSet(viewsets.ViewSet, viewsets.ModelViewSet):
         return [IsAdminUser()]
 
 
-class LessonViewSet(viewsets.ModelViewSet):
-    queryset = Lesson.objects.all()
+class LessonViewSet(viewsets.ViewSet, generics.RetrieveAPIView):
+    queryset = Lesson.objects.prefetch_related('tags').filter(active=True)
     serializer_class = LessonSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -101,12 +127,12 @@ class LessonViewSet(viewsets.ModelViewSet):
         return [IsAdminUser()]
 
 
-class UserView(APIView):
+class UserViewSet(viewsets.ViewSet, generics.CreateAPIView):
+    queryset = User.objects.filter(is_active=True)
     authentication_classes = [BasicAuthentication, TokenAuthentication]
     permission_classes = [IsAdminUser]
-
-    def get(self, request):
-        pass
+    serializer_class = UserSerializer
+    parser_class = parsers.MultiPartParser
 
 
 schema_view = get_schema_view(

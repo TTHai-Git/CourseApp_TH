@@ -26,6 +26,7 @@ router = routers.DefaultRouter()
 router.register('courses', views.CourseViewSet, basename='course')
 router.register('categories', views.CategoryViewSet, basename='category')
 router.register('lessons', views.LessonViewSet, basename='lesson')
+router.register('users',views.UserViewSet, basename='user')
 
 schema_view = get_schema_view(
     openapi.Info(
@@ -40,9 +41,10 @@ schema_view = get_schema_view(
 )
 
 urlpatterns = [
-    path('', views.index, name="index"),
+    # path('', views.index, name="index"),
     path('', include(router.urls)),
     path('admin/', admin.site.urls),
+    re_path(r'^ckeditor/', include('ckeditor_uploader.urls')),
     re_path(r'^swagger(?P<format>\.json|\.yaml)$',
             schema_view.without_ui(cache_timeout=0),
             name='schema-json'),
