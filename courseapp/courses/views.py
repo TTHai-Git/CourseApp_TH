@@ -40,11 +40,11 @@ class CourseViewSet(viewsets.ViewSet, viewsets.generics.ListAPIView, SecurityVie
             sub = self.request.query_params.get('sub')
 
             if sub:
-                queryset = Course.objects.filter(subject__icontains=sub)
+                queryset = queryset.filter(subject__icontains=sub)
 
             category_id = self.request.query_params.get('cate_id')
             if category_id:
-                queryset = Course.objects.filter(category_id=category_id)
+                queryset = queryset.filter(category_id=category_id)
         return queryset
 
     # def list(self, request):
