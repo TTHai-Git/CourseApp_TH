@@ -10,6 +10,9 @@ from cloudinary.models import CloudinaryField
 class User(AbstractUser):
     avatar = CloudinaryField(null=True)
 
+    def __str__(self):
+        return f'{self.id} - {self.last_name}  {self.first_name} - {self.username}'
+
 
 class BaseModel(models.Model):
     created_date = models.DateTimeField(auto_now_add=True, null=True)
@@ -24,7 +27,7 @@ class Category(BaseModel):
     name = models.CharField(max_length=50)
 
     def __str__(self):
-        return self.name
+        return f'{self.id} - {self.name} - {self.created_date} - {self.updated_date}'
 
 
 class Tag(BaseModel):
@@ -49,7 +52,7 @@ class Course(ItemBase):
     category = models.ForeignKey(Category, on_delete=models.CASCADE)
 
     def __str__(self):
-        return self.subject
+        return f'{self.id} - {self.subject} - {self.created_date} - {self.updated_date} - {self.category}'
 
 
 class Lesson(ItemBase):
@@ -60,7 +63,7 @@ class Lesson(ItemBase):
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
 
     def __str__(self):
-        return self.subject
+        return f'{self.id} - {self.subject} - {self.course}'
 
 
 class Interaction(BaseModel):
@@ -68,7 +71,7 @@ class Interaction(BaseModel):
     lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE)
 
     def __str__(self):
-        return f'{self.user_id} - {self.lesson_id}'
+        return f'{self.user} - {self.lesson}'
 
     class Meta:
         abstract = True
@@ -76,6 +79,9 @@ class Interaction(BaseModel):
 
 class Comment(Interaction):
     content = models.CharField(max_length=255)
+
+    def __str__(self):
+        return f'{super(Comment, self).__str__()} - {self.content}'
 
 
 class Like(Interaction):

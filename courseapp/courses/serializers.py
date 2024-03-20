@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from courses.models import Course, Category, Lesson, Tag, User
+from courses.models import Course, Category, Lesson, Tag, User, Comment, Interaction
 
 
 class ItemSerializer(serializers.ModelSerializer):
@@ -30,8 +30,13 @@ class TagSerializer(serializers.ModelSerializer):
 class LessonSerializer(ItemSerializer):
     class Meta:
         model = Lesson
-        fields = ['id', 'subject', 'created_date', 'image', 'updated_date', 'tags','content']
+        fields = ['id', 'subject', 'created_date', 'image', 'updated_date', 'tags', 'content']
 
+
+class CommentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Comment
+        fields = '__all__'
 
 
 class LessonDetailsSerializer(LessonSerializer):
@@ -43,18 +48,9 @@ class LessonDetailsSerializer(LessonSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
-
-    def to_representation(self, instance):
-        rep = super().to_representation(instance)
-        rep['avatar'] = instance.avatar.url
-
-        return rep
-
     def create(self, validated_data):
         data = validated_data.copy()
         user = User(**data)
-        # import pdb
-        # pdb.set_trace()
         user.set_password(data["password"])
         user.save()
 
@@ -68,3 +64,11 @@ class UserSerializer(serializers.ModelSerializer):
                 'write_only': True
             }
         }
+
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        # import pdb
+        # pdb.set_trace()
+        rep['avatar'] = instance.avatar.url
+
+        return rep

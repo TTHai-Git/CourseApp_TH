@@ -9,7 +9,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 import courses.pagination
-from courses.models import Course, Category, Lesson, User
+from courses.models import Course, Category, Lesson, Interaction, User
 from courses import serializers
 
 
@@ -115,17 +115,26 @@ class CategoryViewSet(viewsets.ViewSet, generics.ListAPIView, SecurityViewSet):
         except Category.DoesNotExist:
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
-        serializer = serializers.CategorySerializer(category)
-        return Response(serializer.data, status.HTTP_200_OK)
+        return Response(serializers.CategorySerializer(category).data, status.HTTP_200_OK)
 
 
 class LessonViewSet(viewsets.ViewSet, generics.ListAPIView, generics.RetrieveAPIView, SecurityViewSet):
     queryset = Lesson.objects.all()
     serializer_class = serializers.LessonSerializer
 
+    @action(methods=['get'], url_path='comments', detail=True)
+    def get_comments(self, request, pk):
+        comments = self.get_object().comment_set.filter(active=True)
+        return Response(serializers.CommentSerializer(comments, many=True).data, status=status.HTTP_200_OK)
 
-class UserViewSet(viewsets.ViewSet, generics.CreateAPIView, SecurityViewSet):
+
+class UserViewSet(viewsets.ViewSet, generics.CreateAPIView, SecurityViewSet, generics.ListAPIView,
+                  generics.RetrieveAPIView):
     queryset = User.objects.filter(is_active=True)
     permission_classes = [IsAdminUser]
     serializer_class = serializers.UserSerializer
     parser_classes = [parsers.MultiPartParser, ]
+
+    def get(self):
+        users = User.objects.filter(is_active=True)
+        return Response(serializers.UserSerializer(users).data, status=status.HTTP_200_OK)
