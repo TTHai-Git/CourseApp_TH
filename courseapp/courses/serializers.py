@@ -30,7 +30,8 @@ class TagSerializer(serializers.ModelSerializer):
 class LessonSerializer(ItemSerializer):
     class Meta:
         model = Lesson
-        fields = ['id', 'subject', 'created_date', 'image', 'updated_date']
+        fields = ['id', 'subject', 'created_date', 'image', 'updated_date', 'tags','content']
+
 
 
 class LessonDetailsSerializer(LessonSerializer):

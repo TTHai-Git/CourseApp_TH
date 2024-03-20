@@ -6,6 +6,8 @@ from rest_framework.authentication import BasicAuthentication, TokenAuthenticati
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
+from rest_framework.views import APIView
+
 import courses.pagination
 from courses.models import Course, Category, Lesson, User
 from courses import serializers
@@ -17,25 +19,32 @@ def index(request):
     return HttpResponse("CourseApp")
 
 
-class CourseViewSet(viewsets.ViewSet, viewsets.generics.ListAPIView):
+class SecurityViewSet(APIView):
+    permissions_classes = [permissions.IsAuthenticated]
+    authentication_classes = [BasicAuthentication, TokenAuthentication]
+
+    def get_permissions(self):
+        if self.action in ['list', 'retrieve']:
+            return [IsAuthenticated()]
+        return [IsAdminUser()]
+
+
+class CourseViewSet(viewsets.ViewSet, viewsets.generics.ListAPIView, SecurityViewSet):
     queryset = Course.objects.filter(active=True)
     serializer_class = serializers.CourseSerializer
-    # permissions_classes = [permissions.IsAuthenticated]
     pagination_class = courses.pagination.CoursesPagination
 
     def get_queryset(self):
         queryset = self.queryset
-
         if self.action.__eq__('list'):
-            q = self.request.query_params.get('q')
-            if q:
-                queryset = self.request.query_params.filter(name__icontains=q)
+            sub = self.request.query_params.get('sub')
 
-            category_id = self.request.query_params.get('category_id')
+            if sub:
+                queryset = Course.objects.filter(subject__icontains=sub)
 
+            category_id = self.request.query_params.get('cate_id')
             if category_id:
-                queryset = queryset.filter(category_id=category_id)
-
+                queryset = Course.objects.filter(category_id=category_id)
         return queryset
 
     # def list(self, request):
@@ -73,10 +82,11 @@ class CourseViewSet(viewsets.ViewSet, viewsets.generics.ListAPIView):
         return Response(serializers.LessonSerializer(lessons, many=True).data, status=status.HTTP_200_OK)
 
 
-class CategoryViewSet(viewsets.ViewSet, generics.ListAPIView):
+class CategoryViewSet(viewsets.ViewSet, generics.ListAPIView, SecurityViewSet):
     queryset = Category.objects.filter(active=True)
     serializer_class = serializers.CategorySerializer
-    permissions_classes = [permissions.IsAuthenticated]
+
+    # permissions_classes = [permissions.IsAuthenticated]
 
     # def list(self, request):
     #     category = Category.objects.filter(active=True)
@@ -108,31 +118,14 @@ class CategoryViewSet(viewsets.ViewSet, generics.ListAPIView):
         serializer = serializers.CategorySerializer(category)
         return Response(serializer.data, status.HTTP_200_OK)
 
-    def get_permissions(self):
-        if self.action in ['list', 'retrieve']:
-            return [IsAuthenticated()]
-        return [IsAdminUser()]
 
-
-class LessonViewSet(viewsets.ViewSet, generics.RetrieveAPIView):
-    queryset = Lesson.objects.prefetch_related('tags').filter(active=True)
+class LessonViewSet(viewsets.ViewSet, generics.ListAPIView, generics.RetrieveAPIView, SecurityViewSet):
+    queryset = Lesson.objects.all()
     serializer_class = serializers.LessonSerializer
-    # permission_classes = [permissions.IsAuthenticated]
-
-    def get_permissions(self):
-        if self.action in ['list', 'retrieve']:
-            return [IsAuthenticated()]
-        return [IsAdminUser()]
 
 
-class UserViewSet(viewsets.ViewSet, generics.CreateAPIView):
+class UserViewSet(viewsets.ViewSet, generics.CreateAPIView, SecurityViewSet):
     queryset = User.objects.filter(is_active=True)
-    authentication_classes = [BasicAuthentication, TokenAuthentication]
     permission_classes = [IsAdminUser]
     serializer_class = serializers.UserSerializer
     parser_classes = [parsers.MultiPartParser, ]
-
-
-
-
-

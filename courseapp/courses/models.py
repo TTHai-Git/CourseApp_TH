@@ -30,8 +30,8 @@ class Category(BaseModel):
 class Tag(BaseModel):
     name = models.CharField(max_length=50, unique=True)
 
-    def __str__(self):
-        return self.name
+    # def __str__(self):
+    #     return f'{self.id} - {self.name}'
 
 
 class ItemBase(BaseModel):
@@ -44,7 +44,7 @@ class ItemBase(BaseModel):
 class Course(ItemBase):
     subject = models.CharField(max_length=255)
     description = RichTextField(null=True)
-    #image = models.ImageField(upload_to='courses/%Y/%m/', null=True, blank=True)
+    # image = models.ImageField(upload_to='courses/%Y/%m/', null=True, blank=True)
     image = CloudinaryField(null=True)
     category = models.ForeignKey(Category, on_delete=models.CASCADE)
 
@@ -55,7 +55,7 @@ class Course(ItemBase):
 class Lesson(ItemBase):
     subject = models.CharField(max_length=255)
     content = RichTextField()
-    #image = models.ImageField(upload_to='lesson/%Y/%m/')
+    # image = models.ImageField(upload_to='lesson/%Y/%m/')
     image = CloudinaryField(null=True)
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
 
