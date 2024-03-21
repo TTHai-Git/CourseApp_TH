@@ -21,7 +21,7 @@ def index(request):
 
 class SecurityViewSet(APIView):
     permissions_classes = [permissions.IsAuthenticated]
-    authentication_classes = [BasicAuthentication, TokenAuthentication]
+    # authentication_classes = [BasicAuthentication, TokenAuthentication]
 
     def get_permissions(self):
         if self.action in ['list', 'retrieve']:
@@ -128,13 +128,14 @@ class LessonViewSet(viewsets.ViewSet, generics.ListAPIView, generics.RetrieveAPI
         return Response(serializers.CommentSerializer(comments, many=True).data, status=status.HTTP_200_OK)
 
 
-class UserViewSet(viewsets.ViewSet, generics.CreateAPIView, SecurityViewSet, generics.ListAPIView,
-                  generics.RetrieveAPIView):
+class UserViewSet(viewsets.ViewSet, generics.CreateAPIView, SecurityViewSet, generics.ListAPIView):
     queryset = User.objects.filter(is_active=True)
     permission_classes = [IsAdminUser]
     serializer_class = serializers.UserSerializer
     parser_classes = [parsers.MultiPartParser, ]
 
-    def get(self):
-        users = User.objects.filter(is_active=True)
-        return Response(serializers.UserSerializer(users).data, status=status.HTTP_200_OK)
+    @action(methods=['list'], url_path='user', detail=True)
+    def get_details(self, request, pk):
+        user = self.get_object()
+        return Response(serializers.UserSerializer(user).data, status=status.HTTP_200_OK)
+

@@ -44,7 +44,9 @@ INSTALLED_APPS = [
     'ckeditor_uploader',
     'rest_framework',
     'drf_yasg',
-    'rest_framework.authtoken'
+    'rest_framework.authtoken',
+    'corsheaders',
+    'oauth2_provider',
 ]
 
 REST_FRAMEWORK = {
@@ -57,8 +59,9 @@ REST_FRAMEWORK = {
     ],
 
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.BasicAuthentication',
-        'rest_framework.authentication.TokenAuthentication'
+        # 'rest_framework.authentication.BasicAuthentication',
+        # 'rest_framework.authentication.TokenAuthentication',
+        'oauth2_provider.contrib.rest_framework.OAuth2Authentication',
     ]
 }
 
@@ -66,6 +69,7 @@ AUTH_USER_MODEL = 'courses.User'
 CKEDITOR_UPLOAD_PATH = "static/ckeditor/images/"
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -74,6 +78,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+CORS_ALLOW_ALL_ORIGINS = True
 
 ROOT_URLCONF = 'courseapp.urls'
 

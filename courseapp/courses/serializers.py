@@ -56,6 +56,13 @@ class UserSerializer(serializers.ModelSerializer):
 
         return user
 
+    def update(self, instance, validated_data):
+        data = validated_data.copy()
+        user = User(**data)
+        user.set_password(data["password"])
+        user.set_avatar(data["avatar"])
+        user.save()
+
     class Meta:
         model = User
         fields = ['id', 'first_name', 'last_name', 'username', 'password', 'email', 'avatar']
@@ -67,8 +74,6 @@ class UserSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         rep = super().to_representation(instance)
-        # import pdb
-        # pdb.set_trace()
         rep['avatar'] = instance.avatar.url
 
         return rep

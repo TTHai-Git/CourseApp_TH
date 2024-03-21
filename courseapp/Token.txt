@@ -1,0 +1,12 @@
+Name = "CourseApp"
+Client id = "CEEIzbfXkbMu6NfYKdlicrbAtLyyE0VKvjnoI6MX"
+Client secret = "2m9tHGwbCylKROZ3ZmWb3eDENQLREdKBxPtFizqDdirDow04g91i2lleYgWKQwyeFWbe95PjXtCMTUhfE7qCkvdSF1ostJ5Dxys3NDtisTYtnpHUGZ42nf57nOrbG9on"
+
+{
+    "username": admin,
+    "access_token": "wL2xOLYkEdmgWYrKdW11o1J4fSth0M",
+    "expires_in": 36000,
+    "token_type": "Bearer",
+    "scope": "read write",
+    "refresh_token": "73lII2rLvQahlzthE5KoNc6hLOVk8P"
+}
