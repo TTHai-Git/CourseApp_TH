@@ -33,8 +33,8 @@ class Category(BaseModel):
 class Tag(BaseModel):
     name = models.CharField(max_length=50, unique=True)
 
-    # def __str__(self):
-    #     return f'{self.id} - {self.name}'
+    def __str__(self):
+        return f'{self.id} - {self.name}'
 
 
 class ItemBase(BaseModel):

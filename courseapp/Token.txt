@@ -1,6 +1,6 @@
 Name = "CourseApp"
-Client id = "CEEIzbfXkbMu6NfYKdlicrbAtLyyE0VKvjnoI6MX"
-Client secret = "2m9tHGwbCylKROZ3ZmWb3eDENQLREdKBxPtFizqDdirDow04g91i2lleYgWKQwyeFWbe95PjXtCMTUhfE7qCkvdSF1ostJ5Dxys3NDtisTYtnpHUGZ42nf57nOrbG9on"
+client_id = "CEEIzbfXkbMu6NfYKdlicrbAtLyyE0VKvjnoI6MX"
+client_secret = "2m9tHGwbCylKROZ3ZmWb3eDENQLREdKBxPtFizqDdirDow04g91i2lleYgWKQwyeFWbe95PjXtCMTUhfE7qCkvdSF1ostJ5Dxys3NDtisTYtnpHUGZ42nf57nOrbG9on"
 
 {
     "username": admin,

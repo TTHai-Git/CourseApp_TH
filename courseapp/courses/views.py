@@ -1,6 +1,4 @@
 from django.http import HttpResponse
-from drf_yasg import openapi
-from drf_yasg.views import get_schema_view
 from rest_framework import viewsets, permissions, generics, status, parsers
 from rest_framework.authentication import BasicAuthentication, TokenAuthentication
 from rest_framework.decorators import action
@@ -9,7 +7,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 import courses.pagination
-from courses.models import Course, Category, Lesson, Interaction, User
+from courses.models import Course, Category, Lesson, User, Tag
 from courses import serializers
 
 
@@ -118,7 +116,7 @@ class CategoryViewSet(viewsets.ViewSet, generics.ListAPIView, SecurityViewSet):
         return Response(serializers.CategorySerializer(category).data, status.HTTP_200_OK)
 
 
-class LessonViewSet(viewsets.ViewSet, generics.ListAPIView, generics.RetrieveAPIView, SecurityViewSet):
+class LessonViewSet(viewsets.ViewSet, generics.ListAPIView, generics.RetrieveAPIView, SecurityViewSet ):
     queryset = Lesson.objects.all()
     serializer_class = serializers.LessonSerializer
 
@@ -126,6 +124,22 @@ class LessonViewSet(viewsets.ViewSet, generics.ListAPIView, generics.RetrieveAPI
     def get_comments(self, request, pk):
         comments = self.get_object().comment_set.filter(active=True)
         return Response(serializers.CommentSerializer(comments, many=True).data, status=status.HTTP_200_OK)
+
+    @action(methods=['post'], url_path='add-tags', detail=True)
+    def add_tags(self, request, pk):
+        try:
+            lesson = self.get_object()
+            tags = request.data.get('tags')
+
+            for tag in tags.split(','):
+                tag_name = tag.strip()
+                t, created = Tag.objects.get_or_create(name=tag_name)
+                lesson.tags.add(t)
+
+            lesson.save()
+        except Lesson.DoesNotExist | KeyError:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        return Response(serializers.LessonSerializer(lesson).data, status=status.HTTP_200_OK)
 
 
 class UserViewSet(viewsets.ViewSet, generics.CreateAPIView, SecurityViewSet, generics.ListAPIView):
@@ -138,4 +152,3 @@ class UserViewSet(viewsets.ViewSet, generics.CreateAPIView, SecurityViewSet, gen
     def get_details(self, request, pk):
         user = self.get_object()
         return Response(serializers.UserSerializer(user).data, status=status.HTTP_200_OK)
-
