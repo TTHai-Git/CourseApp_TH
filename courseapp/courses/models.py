@@ -24,7 +24,7 @@ class BaseModel(models.Model):
 
 
 class Category(BaseModel):
-    name = models.CharField(max_length=50)
+    name = models.CharField(max_length=5)
 
     def __str__(self):
         return f'{self.id} - {self.name} - {self.created_date} - {self.updated_date}'

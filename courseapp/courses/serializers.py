@@ -18,7 +18,7 @@ class CourseSerializer(ItemSerializer):
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
-        fields = ['id', 'name', 'created_date', 'active']
+        fields = ['id', 'name']
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -28,15 +28,11 @@ class TagSerializer(serializers.ModelSerializer):
 
 
 class LessonSerializer(ItemSerializer):
+    tags = TagSerializer(read_only=True, many=True)
+
     class Meta:
         model = Lesson
         fields = ['id', 'subject', 'created_date', 'image', 'updated_date', 'tags', 'content']
-
-
-class CommentSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Comment
-        fields = '__all__'
 
 
 class LessonDetailsSerializer(LessonSerializer):
@@ -44,7 +40,7 @@ class LessonDetailsSerializer(LessonSerializer):
 
     class Meta:
         model = LessonSerializer.Meta.model
-        fields = LessonSerializer.Meta.fields + ['content', 'tags']
+        fields = LessonSerializer.Meta.fields + ['tags']
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -77,3 +73,22 @@ class UserSerializer(serializers.ModelSerializer):
         rep['avatar'] = instance.avatar.url
 
         return rep
+
+
+class UserCommentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'first_name', 'last_name', 'username', 'avatar']
+
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        rep['avatar'] = instance.avatar.url
+        return rep
+
+
+class CommentSerializer(serializers.ModelSerializer):
+    user = UserCommentSerializer(many=False)
+
+    class Meta:
+        model = Comment
+        fields = ['id', 'content', 'created_date', 'updated_date', 'user']
