@@ -102,7 +102,7 @@ class LessonViewSet(viewsets.ViewSet, generics.ListAPIView, generics.RetrieveAPI
             return Response(status=status.HTTP_404_NOT_FOUND)
         return Response(serializers.LessonSerializer(lesson).data, status=status.HTTP_201_CREATED)
 
-    @action(methods=['post'], url_path="add_comment", detail=True)
+    @action(methods=['post'], url_path="comments", detail=True)
     def add_comment(self, request, pk):
         try:
             comment = self.get_object().create(content=request.data.get('content'), user=request.user)
