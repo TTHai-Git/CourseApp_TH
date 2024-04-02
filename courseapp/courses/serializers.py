@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from courses.models import Course, Category, Lesson, Tag, User, Comment, Interaction
+from courses.models import Course, Category, Lesson, Tag, User, Comment
 
 
 class ItemSerializer(serializers.ModelSerializer):
@@ -41,6 +41,17 @@ class LessonDetailsSerializer(LessonSerializer):
     class Meta:
         model = LessonSerializer.Meta.model
         fields = LessonSerializer.Meta.fields + ['tags']
+
+
+class AuthenticatedLessonDetailsSerializer(LessonDetailsSerializer):
+    liked = serializers.SerializerMethodField()
+
+    def get_liked(self, lesson):
+        return lesson.like_set.filter(active=True).exists()
+
+    class Meta:
+        model = LessonDetailsSerializer.Meta.model
+        fields = LessonDetailsSerializer.Meta.fields + ['liked']
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -87,7 +98,7 @@ class UserCommentSerializer(serializers.ModelSerializer):
 
 
 class CommentSerializer(serializers.ModelSerializer):
-    user = UserCommentSerializer(many=False)
+    user = UserCommentSerializer()
 
     class Meta:
         model = Comment

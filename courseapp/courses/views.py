@@ -1,13 +1,10 @@
 from django.http import HttpResponse
 from rest_framework import viewsets, permissions, generics, status, parsers
-from rest_framework.authentication import BasicAuthentication, TokenAuthentication
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
-from rest_framework.views import APIView
 import courses.pagination
-from courses.models import Course, Category, Lesson, User, Tag, Comment
-from courses import serializers
+from courses.models import Course, Category, Lesson, User, Tag, Comment, Like
+from courses import serializers, pagination, perms
 
 
 # Create your views here.
@@ -17,17 +14,7 @@ def index(request):
     return HttpResponse("CourseApp")
 
 
-class SecurityViewSet(APIView):
-    permissions_classes = [permissions.IsAuthenticated]
-    # authentication_classes = [BasicAuthentication, TokenAuthentication]
-
-    def get_permissions(self):
-        if self.action in ['list', 'retrieve']:
-            return [IsAuthenticated()]
-        return [IsAdminUser()]
-
-
-class CourseViewSet(viewsets.ViewSet, viewsets.generics.ListAPIView, SecurityViewSet):
+class CourseViewSet(viewsets.ViewSet, viewsets.generics.ListAPIView):
     queryset = Course.objects.filter(active=True)
     serializer_class = serializers.CourseSerializer
     pagination_class = courses.pagination.CoursesPagination
@@ -55,7 +42,7 @@ class CourseViewSet(viewsets.ViewSet, viewsets.generics.ListAPIView, SecurityVie
         return Response(serializers.LessonSerializer(lessons, many=True).data, status=status.HTTP_200_OK)
 
 
-class CategoryViewSet(viewsets.ViewSet, generics.ListAPIView, SecurityViewSet):
+class CategoryViewSet(viewsets.ViewSet, generics.ListAPIView):
     queryset = Category.objects.filter(active=True)
     serializer_class = serializers.CategorySerializer
     pagination_class = courses.pagination.CategoriesPagination
@@ -74,14 +61,28 @@ class CategoryViewSet(viewsets.ViewSet, generics.ListAPIView, SecurityViewSet):
         return Response(serializers.CategorySerializer(category).data, status.HTTP_201_CREATED)
 
 
-class LessonViewSet(viewsets.ViewSet, generics.ListAPIView, generics.RetrieveAPIView, SecurityViewSet):
+class LessonViewSet(viewsets.ViewSet, generics.ListAPIView, generics.RetrieveAPIView):
     queryset = Lesson.objects.all()
     serializer_class = serializers.LessonSerializer
 
+    def get_permissions(self):
+        if self.action in ['add_comment', 'like']:
+            return [permissions.IsAuthenticated()]
+        return [permissions.AllowAny()]
+
+    def get_serializer_class(self):
+        if self.request.user.is_authenticated:
+            return serializers.AuthenticatedLessonDetailsSerializer
+        return self.serializer_class
+
     @action(methods=['get'], url_path='comments', detail=True)
     def get_comments(self, request, pk):
-        comments = self.get_object().comment_set.filter(active=True)
-
+        comments = self.get_object().comment_set.select_related('user').order_by('-id')
+        paginator = pagination.CommentPaginator()
+        page = paginator.paginate_queryset(comments, request)
+        if page is not None:
+            serializer = serializers.CommentSerializer(page, many=True)
+            return paginator.get_paginated_response(serializer.data)
         return Response(serializers.CommentSerializer(comments, many=True).data, status=status.HTTP_200_OK)
 
     @action(methods=['post'], url_path='add-tags', detail=True)
@@ -101,39 +102,60 @@ class LessonViewSet(viewsets.ViewSet, generics.ListAPIView, generics.RetrieveAPI
             return Response(status=status.HTTP_404_NOT_FOUND)
         return Response(serializers.LessonSerializer(lesson).data, status=status.HTTP_201_CREATED)
 
-    @action(methods=['post'], url_path="add-comments", detail=True)
-    def add_comments(self, request, pk):
+    @action(methods=['post'], url_path="add_comment", detail=True)
+    def add_comment(self, request, pk):
         try:
-            content = request.data.get('content')
-            lesson = self.get_object()
-            comment = Comment(content=content, user=request.user, lesson=lesson)
-            comment.save()
-            comments = self.get_object().comment_set.filter(active=True)
-
+            comment = self.get_object().create(content=request.data.get('content'), user=request.user)
         except Lesson.DoesNotExist | KeyError:
             return Response(status=status.HTTP_404_NOT_FOUND)
-        return Response(serializers.CommentSerializer(comments, many=True).data, status=status.HTTP_201_CREATED)
+        return Response(serializers.CommentSerializer(comment).data, status=status.HTTP_201_CREATED)
+
+    @action(methods=['post'], url_path='like', detail=True)
+    def like(self, request, pk):
+        li, created = Like.objects.get_or_create(lesson=self.get_object(), user=request.user)
+        if not created:
+            li.active = not li.active
+            li.save()
+        return Response(serializers.AuthenticatedLessonDetailsSerializer(self.get_object()).data)
 
 
-class UserViewSet(viewsets.ViewSet, generics.CreateAPIView, SecurityViewSet, generics.ListAPIView):
+class UserViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.ListAPIView):
     queryset = User.objects.filter(is_active=True)
-    permission_classes = [IsAdminUser]
     serializer_class = serializers.UserSerializer
     parser_classes = [parsers.MultiPartParser, ]
 
-    @action(methods=['list'], url_path='user', detail=True)
-    def get_details(self, request, pk):
-        user = self.get_object()
-        return Response(serializers.UserSerializer(user).data, status=status.HTTP_200_OK)
+    def get_permissions(self):
+        if self.action in ['get_current_user']:
+            return [permissions.IsAuthenticated()]
+        return [permissions.AllowAny()]
+
+    @action(methods=['get', 'patch'], url_path='current-user', detail=False)
+    def get_current_user(self, request):
+        user = request.user
+        if request.method.__eq__('PATCH'):
+            for k, v in request.data.items():
+                setattr(user, k, v)
+            user.save()
+        return Response(serializers.UserSerializer(user).data)
 
 
-class CommentViewSet(viewsets.ViewSet, generics.DestroyAPIView):
+class CommentViewSet(viewsets.ViewSet, generics.ListAPIView, generics.DestroyAPIView, generics.UpdateAPIView):
     queryset = Comment.objects.filter(active=True)
-    permissions_classes = [IsAdminUser]
+    permissions_classes = [perms.CommentOwner]
     serializer_class = serializers.CommentSerializer
 
-    def destroy(self, request, *args, **kwargs):
-        comment = self.get_object()
-        if comment.user == request.user:
-            comment.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
+    # def destroy(self, request, *args, **kwargs):
+    #     comment = self.get_object()
+    #     if comment.user == request.user:
+    #         comment.delete()
+    #         return Response(status=status.HTTP_204_NO_CONTENT)
+
+    # @action(methods=['patch'], url_path='update_comment', detail=True)
+    # def update_comment(self, request, pk):
+    #     comment = self.get_object()
+    #     if comment.user == request.user:
+    #         comment.content = request.data.get('content')
+    #         comment.save()
+    #         return Response(serializers.CommentSerializer(comment).data, status=status.HTTP_200_OK)
+    #     else:
+    #         return Response(status=status.HTTP_404_NOT_FOUND)

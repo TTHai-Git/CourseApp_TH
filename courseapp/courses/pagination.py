@@ -1,11 +1,13 @@
 from rest_framework import pagination
 
-from courses.models import Category
-
 
 class CoursesPagination(pagination.PageNumberPagination):
-    page_size = 22
+    page_size = 5
 
 
 class CategoriesPagination(pagination.PageNumberPagination):
-    page_size = 4
+    page_size = 5
+
+
+class CommentPaginator(pagination.PageNumberPagination):
+    page_size = 2
