@@ -17,7 +17,7 @@ def index(request):
 class CourseViewSet(viewsets.ViewSet, viewsets.generics.ListAPIView):
     queryset = Course.objects.filter(active=True)
     serializer_class = serializers.CourseSerializer
-    pagination_class = courses.pagination.CoursesPagination
+    pagination_class = courses.pagination.CoursesPaginator
 
     def get_queryset(self):
         queryset = self.queryset
@@ -45,7 +45,7 @@ class CourseViewSet(viewsets.ViewSet, viewsets.generics.ListAPIView):
 class CategoryViewSet(viewsets.ViewSet, generics.ListAPIView):
     queryset = Category.objects.filter(active=True)
     serializer_class = serializers.CategorySerializer
-    pagination_class = courses.pagination.CategoriesPagination
+    pagination_class = courses.pagination.CategoriesPaginator
 
     # permissions_classes = [permissions.IsAuthenticated]
 
