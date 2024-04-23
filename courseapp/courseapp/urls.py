@@ -21,6 +21,8 @@ from rest_framework import permissions, routers
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 
+from courses.admin import admin_site
+
 router = routers.DefaultRouter()
 router.register('courses', views.CourseViewSet, basename='course')
 router.register('categories', views.CategoryViewSet, basename='category')
@@ -43,7 +45,7 @@ schema_view = get_schema_view(
 urlpatterns = [
     # path('', views.index, name="index"),
     path('', include(router.urls)),
-    path('admin/', admin.site.urls),
+    path('admin/', admin_site.urls),
     re_path(r'^ckeditor/', include('ckeditor_uploader.urls')),
     re_path(r'^swagger(?P<format>\.json|\.yaml)$',
             schema_view.without_ui(cache_timeout=0),
