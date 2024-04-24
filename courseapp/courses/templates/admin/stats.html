@@ -1,17 +1,64 @@
 {% extends 'admin/base_site.html' %}
 {% block content %}
-<h1>THỐNG KÊ THÔNG TIN CÁC KHOÁ HỌC</h1>
+<style>
+    body, html {
+        height: 100%;
+        margin: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
 
-<ul>
-{% for s in stats %}
-<li><strong>{{ s.name }}</strong> có {{s.counter}} bài học </li>
-{% endfor %}
-</ul>
-<div style="width = 50%">
-    123
-  <canvas id="myChart">
-  </canvas>
+    .container {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        width: 90%;
+        max-width: 1200px;
+        border: 2px solid #ccc;
+        border-radius: 10px;
+        padding: 30px;
+        box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .inner-div {
+        margin-top: 20px;
+    }
+
+    .inner-div-chart {
+        text-align: center;
+        margin-top: 20px;
+    }
+
+    /* Adjustments for smaller screens */
+    @media screen and (max-width: 600px) {
+        .container {
+            width: 95%;
+        }
+    }
+
+    /* Make canvas wider and taller */
+    #myChart {
+        width: 100%; /* Take full width of the container */
+        height: 400px; /* Set a specific height */
+    }
+</style>
+<h1>THỐNG KÊ THÔNG TIN CÁC KHOÁ HỌC</h1>
+<div class="container">
+    <div class="inner-div">
+        <ul>
+            {% for s in stats %}
+            <li><strong>{{ s.name }}</strong> có {{s.counter}} khóa học </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="inner-div-chart">
+        <h1>BIỂU ĐỒ THỐNG KÊ CÁC KHÓA HỌC</h1>
+        <canvas id="myChart"></canvas>
+    </div>
 </div>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
   const ctx = document.getElementById('myChart');
@@ -27,7 +74,7 @@
         data: {
           labels: label,
           datasets: [{
-            label: '# of Votes',
+            label: '# số lượng',
             data: data,
             borderWidth: 1,
             backgroundColor: ['Red', 'Green', 'Blue', 'Gold']

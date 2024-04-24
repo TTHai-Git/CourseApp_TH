@@ -6,7 +6,6 @@ import courses.pagination
 from courses.models import Course, Category, Lesson, User, Tag, Comment, Like
 from courses import serializers, pagination, perms
 
-
 # Create your views here.
 
 
@@ -47,15 +46,13 @@ class CategoryViewSet(viewsets.ViewSet, generics.ListAPIView):
     serializer_class = serializers.CategorySerializer
     pagination_class = courses.pagination.CategoriesPaginator
 
-    # permissions_classes = [permissions.IsAuthenticated]
-
     @action(methods=['post'], detail=True)
-    def hide_category(self, request, pk=None):
+    def hide_category(self, pk=None):
+        category = Category.objetcts.get(pk=pk)
         try:
-            category = Category.objetcts.get(pk=pk)
             category.active = False
             category.save()
-        except Category.DoesNotExist:
+        except category.DoesNotExist:
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
         return Response(serializers.CategorySerializer(category).data, status.HTTP_201_CREATED)
@@ -77,46 +74,55 @@ class LessonViewSet(viewsets.ViewSet, generics.ListAPIView, generics.RetrieveAPI
 
     @action(methods=['get'], url_path='comments', detail=True)
     def get_comments(self, request, pk):
-        comments = self.get_object().comment_set.select_related('user').order_by('-id')
-        paginator = pagination.CommentPaginator()
-        page = paginator.paginate_queryset(comments, request)
-        if page is not None:
-            serializer = serializers.CommentSerializer(page, many=True)
-            return paginator.get_paginated_response(serializer.data)
+        lesson = self.get_object()
+        try:
+            comments = lesson.comment_set.select_related('user').order_by('-id')
+            paginator = pagination.CommentPaginator()
+            page = paginator.paginate_queryset(comments, request)
+            if page is not None:
+                serializer = serializers.CommentSerializer(page, many=True)
+                return paginator.get_paginated_response(serializer.data)
+        except lesson.DoesNotExist | KeyError:
+            return Response(status=status.HTTP_404_NOT_FOUND)
         return Response(serializers.CommentSerializer(comments, many=True).data, status=status.HTTP_200_OK)
 
     @action(methods=['post'], url_path='add-tags', detail=True)
     def add_tags(self, request, pk):
+        lesson = self.get_object()
         try:
-            lesson = self.get_object()
             tags = request.data.get('tags')
 
             for tag in tags.split(','):
                 tag_name = tag.strip()
                 t, created = Tag.objects.get_or_create(name=tag_name)
-
                 lesson.tags.add(t)
 
             lesson.save()
-        except Lesson.DoesNotExist | KeyError:
+
+        except lesson.DoesNotExist | KeyError:
             return Response(status=status.HTTP_404_NOT_FOUND)
         return Response(serializers.LessonSerializer(lesson).data, status=status.HTTP_201_CREATED)
 
     @action(methods=['post'], url_path="add-comments", detail=True)
     def add_comment(self, request, pk):
+        lesson = self.get_object()
         try:
-            comment = self.get_object().comment_set.create(content=request.data.get('content'), user=request.user)
-        except Lesson.DoesNotExist | KeyError:
+            comment = lesson.comment_set.create(content=request.data.get('content'), user=request.user)
+        except lesson.DoesNotExist | KeyError:
             return Response(status=status.HTTP_404_NOT_FOUND)
         return Response(serializers.CommentSerializer(comment).data, status=status.HTTP_201_CREATED)
 
     @action(methods=['post'], url_path='like', detail=True)
     def like(self, request, pk):
-        li, created = Like.objects.get_or_create(lesson=self.get_object(), user=request.user)
-        if not created:
-            li.active = not li.active
-            li.save()
-        return Response(serializers.AuthenticatedLessonDetailsSerializer(self.get_object()).data)
+        lesson = self.get_object()
+        try:
+            li, created = Like.objects.get_or_create(lesson=lesson, user=request.user)
+            if not created:
+                li.active = not li.active
+                li.save()
+        except lesson.DoesNotExist | KeyError:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        return Response(serializers.AuthenticatedLessonDetailsSerializer(lesson).data, status=status.HTTP_201_CREATED)
 
 
 class UserViewSet(viewsets.ViewSet, generics.CreateAPIView, generics.ListAPIView):
