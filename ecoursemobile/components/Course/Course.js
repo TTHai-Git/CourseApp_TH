@@ -1,17 +1,27 @@
 import moment from "moment";
 import React from "react";
-import { ActivityIndicator, Image, ScrollView, View } from "react-native";
+import {
+  ActivityIndicator,
+  Image,
+  RefreshControl,
+  ScrollView,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { Chip, List, Searchbar } from "react-native-paper";
 import APIS, { endpoints } from "../../configs/APIS";
 import MyStyles from "../../configs/styles/MyStyles";
 import "moment/locale/vi";
+import Item from "../Utils/item";
+import isCloseToBottom from "../Utils/utils";
 
-const Course = () => {
+const Course = ({ navigation }) => {
   const [categories, setCategories] = React.useState(null);
   const [courses, setCourses] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [q, setQ] = React.useState("");
   const [cateId, setCateId] = React.useState("");
+  const [page, setPage] = React.useState(1);
 
   const loadCates = async () => {
     try {
@@ -23,13 +33,22 @@ const Course = () => {
   };
 
   const loadCourse = async () => {
-    try {
-      let url = `${endpoints["courses"]}?q=${q}&category_id=${cateId}`;
-      let res = await APIS.get(url);
-      setCourses(res.data.results);
-      setLoading(false);
-    } catch (ex) {
-      console.error(ex);
+    if (page > 0) {
+      try {
+        setLoading(true);
+        let url = `${endpoints["courses"]}?q=${q}&category_id=${cateId}&page=${page}`;
+        let res = await APIS.get(url);
+        if (page === 1) setCourses(res.data.results);
+        else if (page > 1)
+          setCourses((current) => {
+            return [...current, ...res.data.results];
+          });
+        if (res.data.next === null) setPage(0);
+      } catch (ex) {
+        console.error(ex);
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -39,7 +58,30 @@ const Course = () => {
 
   React.useEffect(() => {
     loadCourse();
-  }, [q, cateId]);
+  }, [q, cateId, page]);
+
+  // const isCloseToBottom = ({
+  //   layoutMeasurement,
+  //   contentOffset,
+  //   contentSize,
+  // }) => {
+  //   const paddingToBottom = 20;
+  //   return (
+  //     layoutMeasurement.height + contentOffset.y >=
+  //     contentSize.height - paddingToBottom
+  //   );
+  // };
+
+  const loadMore = ({ nativeEvent }) => {
+    if (loading === false && isCloseToBottom(nativeEvent)) {
+      setPage(page + 1);
+    }
+  };
+
+  const search = (value, callback) => {
+    setPage(1);
+    callback(value);
+  };
 
   return (
     <View style={MyStyles.container}>
@@ -54,7 +96,7 @@ const Course = () => {
                 key={c.id}
                 mode={c.id === cateId ? "outlined" : "flat"}
                 icon="shape-outline"
-                onPress={() => setCateId(c.id)}
+                onPress={() => search(c.id, setCateId)}
               >
                 {c.name}
               </Chip>
@@ -63,7 +105,7 @@ const Course = () => {
               style={MyStyles.margin}
               mode={!cateId ? "outlined" : "flat"}
               icon="shape-outline"
-              onPress={() => setCateId("")}
+              onPress={() => search("", setCateId)}
             >
               Show All
             </Chip>
@@ -71,21 +113,32 @@ const Course = () => {
         )}
       </View>
 
-      <Searchbar placeholder="Search" onChangeText={setQ} value={q}></Searchbar>
+      <Searchbar
+        placeholder="Search"
+        onChangeText={(t) => search(t, setQ)}
+        value={q}
+      ></Searchbar>
 
-      <ScrollView>
-        {courses.map((c) => (
-          <List.Item
-            style={MyStyles.margin}
-            key={c.id}
-            title={c.subject}
-            description={moment(c.created_date).fromNow()}
-            left={() => (
-              <Image style={MyStyles.avatar} source={{ uri: c.image }} />
-            )}
-          />
-        ))}
+      <ScrollView onScroll={loadMore}>
+        <RefreshControl onRefresh={() => loadCourse} />
         {loading && <ActivityIndicator />}
+        {courses.map((c) => (
+          <TouchableOpacity
+            key={c.id}
+            onPress={() => navigation.navigate("Lesson", { courseId: c.id })}
+          >
+            {/* <List.Item
+              style={MyStyles.margin}
+              title={c.subject}
+              description={moment(c.created_date).fromNow()}
+              left={() => (
+                <Image style={MyStyles.avatar} source={{ uri: c.image }} />
+              )}
+            /> */}
+            <Item instance={c} />
+          </TouchableOpacity>
+        ))}
+        {loading && page > 1 && <ActivityIndicator />}
       </ScrollView>
     </View>
   );

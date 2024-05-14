@@ -40,6 +40,11 @@ class CourseViewSet(viewsets.ViewSet, viewsets.generics.ListAPIView):
 
         return Response(serializers.LessonSerializer(lessons, many=True).data, status=status.HTTP_200_OK)
 
+    def get_permissions(self):
+        if self.action == 'list':
+            return [permissions.AllowAny()]
+        return [permissions.IsAuthenticated()]
+
 
 class CategoryViewSet(viewsets.ViewSet, generics.ListAPIView):
     queryset = Category.objects.filter(active=True)
@@ -57,13 +62,18 @@ class CategoryViewSet(viewsets.ViewSet, generics.ListAPIView):
 
         return Response(serializers.CategorySerializer(category).data, status.HTTP_201_CREATED)
 
+    def get_permissions(self):
+        if self.action == 'list':
+            return [permissions.AllowAny()]
+        return [permissions.IsAuthenticated()]
+
 
 class LessonViewSet(viewsets.ViewSet, generics.ListAPIView, generics.RetrieveAPIView):
     queryset = Lesson.objects.all()
     serializer_class = serializers.LessonSerializer
 
     def get_permissions(self):
-        if self.action in ['add_comment', 'like']:
+        if self.action in ['add_comment', 'like', 'add_tags']:
             return [permissions.IsAuthenticated()]
         return [permissions.AllowAny()]
 
