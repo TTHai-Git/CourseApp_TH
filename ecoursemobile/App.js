@@ -7,6 +7,10 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import Register from "./components/User/Register";
 import Login from "./components/User/Login";
 import { Icon } from "react-native-paper";
+import { useContext, useReducer } from "react";
+import { MyDispatchContext, MyUserContext } from "./configs/Context";
+import MyUserReducer from "./configs/Reducers";
+import Profile from "./components/User/Profile";
 
 const Stack = createNativeStackNavigator();
 
@@ -33,38 +37,67 @@ const MyStack = () => {
 };
 
 const Tab = createBottomTabNavigator();
+
 const MyTab = () => {
+  const user = useContext(MyUserContext);
   return (
     <Tab.Navigator>
       <Tab.Screen
         name="Home"
         component={MyStack}
         options={{
+          title: "Khóa học",
           tabBarIcon: () => <Icon size={30} color="blue" source="home" />,
         }}
       />
-      <Tab.Screen
-        name="Register"
-        component={Register}
-        options={{
-          tabBarIcon: () => <Icon size={30} color="blue" source="account" />,
-        }}
-      />
-      <Tab.Screen
-        name="Login"
-        component={Login}
-        options={{
-          tabBarIcon: () => <Icon size={30} color="blue" source="login" />,
-        }}
-      />
+      {user === null ? (
+        <>
+          <Tab.Screen
+            name="Register"
+            component={Register}
+            options={{
+              title: "Đăng ký",
+              tabBarIcon: () => (
+                <Icon size={30} color="blue" source="account" />
+              ),
+            }}
+          />
+          <Tab.Screen
+            name="Login"
+            component={Login}
+            options={{
+              title: "Đăng nhập",
+              tabBarIcon: () => <Icon size={30} color="blue" source="login" />,
+            }}
+          />
+        </>
+      ) : (
+        <>
+          <Tab.Screen
+            name="Profile"
+            component={Profile}
+            options={{
+              title: user.username,
+              tabBarIcon: () => (
+                <Icon size={30} color="blue" source="account" />
+              ),
+            }}
+          />
+        </>
+      )}
     </Tab.Navigator>
   );
 };
 
 const App = () => {
+  const [user, dispatch] = useReducer(MyUserReducer, null);
   return (
     <NavigationContainer>
-      <MyTab />
+      <MyUserContext.Provider value={user}>
+        <MyDispatchContext.Provider value={dispatch}>
+          <MyTab />
+        </MyDispatchContext.Provider>
+      </MyUserContext.Provider>
     </NavigationContainer>
   );
 };
